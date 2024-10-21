@@ -9,7 +9,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 STATIC_TOKEN = "my-static-token"
 
-# Admin-Authentifizierung mit HTTP Basic Auth
+# admin authentication with HTTP Basic Auth
 def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = secrets.compare_digest(credentials.username, "admin")
     correct_password = secrets.compare_digest(credentials.password, "secret")
@@ -21,7 +21,7 @@ def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
         )
     return credentials.username
 
-# Token-basierte Authentifizierung
+# token-based authentication
 def get_current_user(token: str = Depends(oauth2_scheme)):
     if token != STATIC_TOKEN:
         raise HTTPException(
@@ -30,7 +30,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         )
     return token
 
-# Standardmäßig unsichtbare Endpunkte
+# invisible end points by default
 @app.get("/", include_in_schema=False)
 async def root(user: str = Depends(get_current_user)):
     return {"message": f"Hello, authenticated user"}
@@ -39,27 +39,27 @@ async def root(user: str = Depends(get_current_user)):
 async def read_item(item_id: int, user: str = Depends(get_current_user)):
     return {"item_id": item_id, "owner": user}
 
-# Funktion, um die geschützten Routen anzuzeigen
+# function to display the protected routes
 def show_protected_routes(app: FastAPI):
     app.openapi_schema = None
     for route in app.routes:
         if hasattr(route, "include_in_schema") and route.path != "/token":
             route.include_in_schema = True
 
-# Funktion, um die geschützten Routen zu verstecken, außer öffentlichen Routen
+# function to hide the protected routes, except public routes
 def hide_protected_routes(app: FastAPI):
     app.openapi_schema = None
     for route in app.routes:
         if hasattr(route, "include_in_schema") and route.path != "/token":
             route.include_in_schema = False
 
-# Token-Endpunkt nach erfolgreicher Admin-Authentifizierung
+# token endpoint after successful admin authentication
 @app.post("/token", include_in_schema=True)
 async def login(username: str = Depends(get_current_username)):
     show_protected_routes(app)
     return {"message": "Login successful. Endpoints are now visible.", "token": STATIC_TOKEN}
 
-# Logout-Endpunkt
+# logout endpoint to hide the routes again
 @app.post("/logout")
 async def logout():
     hide_protected_routes(app)
