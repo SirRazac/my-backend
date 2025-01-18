@@ -9,5 +9,5 @@ class SensorData(BaseModel):
 
 @app.get("/api/data", response_model=SensorData)
 async def get_sensor_data():
-    # Simulierte Sensordaten
+    # simulated data
     return SensorData(temperature=25.0, humidity=60.0)
