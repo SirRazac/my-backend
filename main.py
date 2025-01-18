@@ -1,29 +1,20 @@
-from fastapi import FastAPI
-from pydantic import BaseModel, Field
-from enum import Enum
-
-items = [
-    {"name": "Computer", "preis": 1000, "typ": "hardware"},
-    {"name": "Monitor", "preis": 800, "typ": "hardware"},
-    {"name": "Diablo 3", "preis": 50, "typ": "software"},
-    {"name": "Windows", "preis": 90, "typ": "software"},
-]
-
-class Type(Enum):
-    hardware = "hardware"
-    software = "software"
-
-class Item(BaseModel):
-    name: str
-    preis: int = Field(100, gt=0, lt=2500)
-    typ: Type
+from fastapi import FastAPI, HTTPException
+import Adafruit_DHT
+from pydantic import BaseModel
 
 app = FastAPI()
 
-@app.get("/items/")
-async def hello():
-    return items
+SENSOR = Adafruit_DHT.DHT22
+PIN = 4
 
-@app.get("/items/{item_id}")
-async def get_item(item_id: int):
-    return items(item_id)
+class SensorData(BaseModel):
+    temperature: float
+    humidity: float
+
+@app.get("/api/data", response_model=SensorData)
+async def get_sensor_data():
+    humidity, temperature = Adafruit_DHT.read_retry(SENSOR, PIN)
+    if humidity is not None and temperature is not None:
+        return SensorData(temperature=temperature, humidity=humidity)
+    else:
+        raise HTTPException(status_code=500, detail="Sensor read failed")
